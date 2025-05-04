@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { EmergencyType, UserLocation, Hospital, EmergencyRequest } from "@/types/types";
@@ -34,21 +33,41 @@ const Index = () => {
     setUserLocation(location);
     setIsLoadingHospitals(true);
     
-    // Fetch nearby hospitals based on location
-    fetchNearbyHospitals(location.lat, location.lng)
-      .then((hospitals) => {
-        setHospitals(hospitals);
-        setIsLoadingHospitals(false);
-      })
-      .catch((error) => {
-        console.error("Error fetching hospitals:", error);
-        toast({
-          title: "Error",
-          description: "Failed to fetch nearby hospitals. Please try again.",
-          variant: "destructive",
+    // If location has valid coordinates, use them to fetch nearby hospitals
+    // Otherwise, fetch a default list (this would happen with manual address input)
+    if (location.lat !== 0 || location.lng !== 0) {
+      // Fetch nearby hospitals based on location
+      fetchNearbyHospitals(location.lat, location.lng)
+        .then((hospitals) => {
+          setHospitals(hospitals);
+          setIsLoadingHospitals(false);
+        })
+        .catch((error) => {
+          console.error("Error fetching hospitals:", error);
+          toast({
+            title: "Error",
+            description: "Failed to fetch nearby hospitals. Please try again.",
+            variant: "destructive",
+          });
+          setIsLoadingHospitals(false);
         });
-        setIsLoadingHospitals(false);
-      });
+    } else {
+      // For manual address without coordinates, just fetch all hospitals
+      fetchNearbyHospitals(37.7749, -122.4194) // default coordinates for fetching
+        .then((hospitals) => {
+          setHospitals(hospitals);
+          setIsLoadingHospitals(false);
+        })
+        .catch((error) => {
+          console.error("Error fetching hospitals:", error);
+          toast({
+            title: "Error",
+            description: "Failed to fetch nearby hospitals. Please try again.",
+            variant: "destructive",
+          });
+          setIsLoadingHospitals(false);
+        });
+    }
   };
   
   // Handler for hospital selection
@@ -195,9 +214,9 @@ const Index = () => {
             <div className="bg-white rounded-xl shadow-lg p-8 text-center">
               <h2 className="text-2xl font-bold mb-6">Share Your Location</h2>
               <p className="text-gray-600 mb-8">
-                We need to access your location to find nearby hospitals
+                We need your location to find nearby hospitals. You can use automatic detection or enter your address manually.
               </p>
-              <div className="flex justify-center">
+              <div className="max-w-md mx-auto">
                 <LocationButton onLocationDetected={handleLocationDetected} />
               </div>
             </div>
@@ -205,6 +224,18 @@ const Index = () => {
 
           {userLocation && (
             <div className="bg-white rounded-xl shadow-lg p-6">
+              <div className="mb-4 p-3 bg-blue-50 rounded-md border border-blue-100">
+                <p className="font-medium">Your location</p>
+                <p className="text-sm text-gray-600">{userLocation.address || `Coordinates: ${userLocation.lat.toFixed(6)}, ${userLocation.lng.toFixed(6)}`}</p>
+                <Button
+                  variant="link"
+                  onClick={() => setUserLocation(null)}
+                  className="p-0 h-auto text-sm"
+                >
+                  Change location
+                </Button>
+              </div>
+              
               <HospitalList
                 hospitals={hospitals}
                 isLoading={isLoadingHospitals}

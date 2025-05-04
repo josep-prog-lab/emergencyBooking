@@ -65,10 +65,46 @@ export const mockHospitals: Hospital[] = [
 ];
 
 export const getHospitalsByDistance = (userLat: number, userLng: number) => {
-  // In a real app, this would calculate actual distances based on user coordinates
-  // For now, we'll just return the mock data sorted by the predefined distances
-  return [...mockHospitals].sort((a, b) => a.distance - b.distance);
+  // Calculate actual distance using Haversine formula
+  const hospitals = mockHospitals.map(hospital => {
+    const distance = calculateDistance(
+      userLat, 
+      userLng, 
+      hospital.coordinates.lat, 
+      hospital.coordinates.lng
+    );
+    
+    // Update the hospital's distance based on calculation
+    return {
+      ...hospital,
+      distance: parseFloat(distance.toFixed(1))
+    };
+  });
+  
+  // Sort by calculated distance
+  return hospitals.sort((a, b) => a.distance - b.distance);
 };
+
+// Function to calculate distance between two coordinates using Haversine formula
+function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  // If we're using default coordinates (likely due to manual address input),
+  // return the default distance values
+  if (lat1 === 0 && lon1 === 0) {
+    return 0; // We'll use the default distances in the mockHospitals array
+  }
+  
+  const R = 6371; // Radius of the Earth in km
+  const dLat = (lat2 - lat1) * (Math.PI / 180);
+  const dLon = (lon2 - lon1) * (Math.PI / 180);
+  const a = 
+    Math.sin(dLat/2) * Math.sin(dLat/2) +
+    Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) * 
+    Math.sin(dLon/2) * Math.sin(dLon/2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  const distance = R * c; // Distance in km
+  
+  return distance;
+}
 
 // Function to simulate a delay in getting hospitals (for loading states)
 export const fetchNearbyHospitals = (userLat: number, userLng: number): Promise<Hospital[]> => {
